@@ -1,0 +1,32 @@
+name: Build OpenWrt MR32 Initramfs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential libncurses5-dev gawk git subversion wget unzip python3 rsync
+
+      - name: Clone OpenWrt
+        run: |
+          git clone https://git.openwrt.org/openwrt/openwrt.git
+          cd openwrt
+          git checkout v24.10.0
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cp ../.config .config
+          make defconfig
+          make -j$(nproc)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mr32-initramfs
+          path: openwrt/bin/targets/bcm53xx/generic/openwrt-bcm53xx-generic-meraki_mr32-initramfs.trx
+
