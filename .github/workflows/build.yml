@@ -24,10 +24,21 @@ jobs:
           make defconfig
           make -j$(nproc)
 
+      - name: Find and rename initramfs
+        run: |
+          FILE=$(find openwrt/bin/targets/bcm53xx/generic -name "*initramfs*.trx" | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "Initramfs not found!"
+            exit 1
+          fi
+          echo "Found initramfs: $FILE"
+          cp "$FILE" mr32-initramfs.bin
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: mr32-initramfs
-          path: openwrt/bin/targets/bcm53xx/generic/openwrt-bcm53xx-generic-meraki_mr32-initramfs.trx
+          path: mr32-initramfs.bin
           compression-level: 0
+          if-no-files-found: error
 
