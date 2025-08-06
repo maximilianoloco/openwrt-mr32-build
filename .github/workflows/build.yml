@@ -13,7 +13,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential libncurses5-dev gawk git subversion wget unzip python3 rsync
 
-      - name: Clone OpenWrt
+      - name: Clone OpenWrt and patch
         run: |
           git clone https://git.openwrt.org/openwrt/openwrt.git
           cd openwrt
@@ -21,11 +21,17 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           cp ../.config .config
-          # Патчим Makefile для MR32, чтобы выпускал initramfs и sysupgrade
-          sed -i '/^define Device\/meraki_mr32$/,/^endef$/ {
-              /IMAGE\/trx/ a\  IMAGE\/initramfs.trx := append-uboot | pad-to $$(BLOCKSIZE) | append-rootfs | pad-rootfs | append-metadata
-              /IMAGE\/trx/ a\  IMAGE\/sysupgrade.bin := append-rootfs | pad-rootfs | append-metadata
-          }' target/linux/bcm53xx/image/Makefile
+          # Прямое добавление сборки initramfs и sysupgrade для MR32
+          awk '
+          BEGIN{found=0}
+          /^define Device\/meraki_mr32$/ {found=1; print; next}
+          found==1 && /^endef$/ {
+            print "  IMAGE/initramfs.trx := append-uboot | pad-to $$(BLOCKSIZE) | append-rootfs | pad-rootfs | append-metadata"
+            print "  IMAGE/sysupgrade.bin := append-rootfs | pad-rootfs | append-metadata"
+            found=0
+          }
+          {print}
+          ' target/linux/bcm53xx/image/Makefile > tmpfile && mv tmpfile target/linux/bcm53xx/image/Makefile
           make defconfig
           make -j$(nproc)
 
