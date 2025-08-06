@@ -22,9 +22,9 @@ jobs:
           ./scripts/feeds install -a
           cp ../.config .config
           # Патчим Makefile для MR32, чтобы выпускал initramfs и sysupgrade
-          sed -i '/Device\/meraki_mr32/,/endef/ {
+          sed -i '/^define Device\/meraki_mr32$/,/^endef$/ {
               /IMAGE\/trx/ a\  IMAGE\/initramfs.trx := append-uboot | pad-to $$(BLOCKSIZE) | append-rootfs | pad-rootfs | append-metadata
-              /endef/ i\  IMAGE\/sysupgrade.bin := append-rootfs | pad-rootfs | append-metadata
+              /IMAGE\/trx/ a\  IMAGE\/sysupgrade.bin := append-rootfs | pad-rootfs | append-metadata
           }' target/linux/bcm53xx/image/Makefile
           make defconfig
           make -j$(nproc)
