@@ -1,4 +1,4 @@
-name: Build OpenWrt MR32 Initramfs
+name: Build OpenWrt MR32 Initramfs + SquashFS
 
 on:
   workflow_dispatch:
@@ -24,21 +24,17 @@ jobs:
           make defconfig
           make -j$(nproc)
 
-      - name: Find and rename initramfs
+      - name: Collect artifacts
         run: |
-          FILE=$(find openwrt/bin/targets/bcm53xx/generic -name "*initramfs*.trx" | head -n 1)
-          if [ -z "$FILE" ]; then
-            echo "Initramfs not found!"
-            exit 1
-          fi
-          echo "Found initramfs: $FILE"
-          cp "$FILE" mr32-initramfs.bin
+          mkdir artifacts
+          find openwrt/bin/targets/bcm53xx/generic -name "*meraki_mr32-initramfs*.trx" -exec cp {} artifacts/mr32-initramfs.bin \;
+          find openwrt/bin/targets/bcm53xx/generic -name "*meraki_mr32-squashfs-sysupgrade.bin" -exec cp {} artifacts/mr32-sysupgrade.bin \;
+          ls -lh artifacts
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mr32-initramfs
-          path: mr32-initramfs.bin
+          name: mr32-images
+          path: artifacts/*
           compression-level: 0
           if-no-files-found: error
-
